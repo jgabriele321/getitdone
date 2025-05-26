@@ -1,0 +1,50 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Go workspace file
+.idea/
+.vscode/
+
+# Environment configuration
+.env
+
+# Compiled bot executable
+bot
+
+# Backup files
+*.bak
+*.swp
+*~
+
+# Cache files
+cache.db
+cache.db-journal
+
+# Dependency directories
+vendor/
+
+# IDE specific files
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Application specific
+*.log
+dead_letter.log
+
+# Build artifacts
+/go-todo-bot
+dist/ 

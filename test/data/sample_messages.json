@@ -1,0 +1,288 @@
+{
+  "test_cases": [
+    {
+      "id": "simple_single_person",
+      "message": "Lilly to reach out to Johnny to get a quote for journalist",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["lilly"],
+            "summary": "Reach out to Johnny to get a quote for journalist"
+          }
+        ]
+      }
+    },
+    {
+      "id": "multiple_people_task",
+      "message": "Jemma, Lexi, and Johnny to set up weekly meeting to talk strategy",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["jemma", "johnny", "lexi"],
+            "summary": "Set up weekly meeting to talk strategy"
+          }
+        ]
+      }
+    },
+    {
+      "id": "team_task_no_specific_person",
+      "message": "We need to reach out to all of our contacts and see who has expertise in robotics",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["team"],
+            "summary": "Reach out to network re: robotics expertise"
+          }
+        ]
+      }
+    },
+    {
+      "id": "task_splitting_and",
+      "message": "Sarah to review the budget proposal AND Marcus to schedule client presentation",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["sarah"],
+            "summary": "Review the budget proposal"
+          },
+          {
+            "people": ["marcus"],
+            "summary": "Schedule client presentation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "task_splitting_then",
+      "message": "Emma to finalize the contract terms and then Alex to send it to legal",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["emma"],
+            "summary": "Finalize the contract terms"
+          },
+          {
+            "people": ["alex"],
+            "summary": "Send contract to legal"
+          }
+        ]
+      }
+    },
+    {
+      "id": "complex_multi_task",
+      "message": "David to research competitors, Maya to update pricing model, AND team to review quarterly goals",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["david"],
+            "summary": "Research competitors"
+          },
+          {
+            "people": ["maya"],
+            "summary": "Update pricing model"
+          },
+          {
+            "people": ["team"],
+            "summary": "Review quarterly goals"
+          }
+        ]
+      }
+    },
+    {
+      "id": "no_split_collaborative_task",
+      "message": "Rachel and Tom to work together on the product roadmap presentation",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["rachel", "tom"],
+            "summary": "Work together on the product roadmap presentation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "team_coordination",
+      "message": "Everyone needs to update their project status in the shared doc",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["team"],
+            "summary": "Update project status in shared doc"
+          }
+        ]
+      }
+    },
+    {
+      "id": "long_message_truncation",
+      "message": "Jessica to coordinate with the external vendor regarding the implementation of the new authentication system including OAuth2 integration, session management, and comprehensive security audit",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["jessica"],
+            "summary": "Coordinate with vendor re: new authentication system implementation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "uppercase_names",
+      "message": "CARLOS and NINA to review the API documentation changes",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["carlos", "nina"],
+            "summary": "Review the API documentation changes"
+          }
+        ]
+      }
+    },
+    {
+      "id": "no_people_mentioned",
+      "message": "Update the onboarding documentation with new process changes",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["team"],
+            "summary": "Update the onboarding documentation with new process changes"
+          }
+        ]
+      }
+    },
+    {
+      "id": "special_characters",
+      "message": "Sophie to review PR #456 & merge the feature branch",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["sophie"],
+            "summary": "Review PR #456 & merge the feature branch"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty_message",
+      "message": "",
+      "expected": {
+        "tasks": [],
+        "error": true
+      }
+    },
+    {
+      "id": "very_short_message",
+      "message": "Kevin follow up",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["kevin"],
+            "summary": "Follow up"
+          }
+        ]
+      }
+    },
+    {
+      "id": "possessive_names",
+      "message": "Review Amanda's proposal and incorporate Jake's feedback",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["amanda", "jake"],
+            "summary": "Review Amanda's proposal and incorporate Jake's feedback"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mixed_case_team",
+      "message": "The Team needs to prepare for the board presentation next week",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["team"],
+            "summary": "Prepare for the board presentation next week"
+          }
+        ]
+      }
+    },
+    {
+      "id": "emoji_message",
+      "message": "Lisa to send the Q3 report 📊 to stakeholders by Friday",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["lisa"],
+            "summary": "Send the Q3 report 📊 to stakeholders by Friday"
+          }
+        ]
+      }
+    },
+    {
+      "id": "client_coordination",
+      "message": "Michael to schedule follow-up call with Acme Corp about contract renewal",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["michael"],
+            "summary": "Schedule follow-up call with Acme Corp about contract renewal"
+          }
+        ]
+      }
+    },
+    {
+      "id": "informal_language",
+      "message": "Hey, Zoe needs to sync up with the design team about the new mockups",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["zoe"],
+            "summary": "Sync up with the design team about the new mockups"
+          }
+        ]
+      }
+    },
+    {
+      "id": "multiple_and_complex",
+      "message": "Ryan to email clients about deadline changes AND Priya to update project timeline AND team to review resource allocation",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["ryan"],
+            "summary": "Email clients about deadline changes"
+          },
+          {
+            "people": ["priya"],
+            "summary": "Update project timeline"
+          },
+          {
+            "people": ["team"],
+            "summary": "Review resource allocation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "vendor_management",
+      "message": "Taylor and Jordan to negotiate terms with the new software vendor",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["jordan", "taylor"],
+            "summary": "Negotiate terms with the new software vendor"
+          }
+        ]
+      }
+    },
+    {
+      "id": "deadline_driven",
+      "message": "Urgent: Sam to get approval from legal before end of day",
+      "expected": {
+        "tasks": [
+          {
+            "people": ["sam"],
+            "summary": "Urgent: Get approval from legal before end of day"
+          }
+        ]
+      }
+    }
+  ]
+} 
