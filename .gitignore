@@ -17,6 +17,7 @@
 
 # Environment configuration
 .env
+SAVINGENV.txt
 
 # Compiled bot executable
 bot
