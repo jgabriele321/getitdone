@@ -18,5 +18,5 @@ services:
         sync: false
     healthCheckPath: /healthz
     numInstances: 1
-    buildCommand: go build -tags netgo -ldflags '-s -w' -o app ./go-todo-bot/cmd/bot
+    buildCommand: cd go-todo-bot && go build -tags netgo -ldflags '-s -w' -o ../app ./cmd/bot
     startCommand: ./app 
