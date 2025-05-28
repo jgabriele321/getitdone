@@ -4,8 +4,7 @@ services:
     runtime: docker
     region: ohio
     plan: free
-    dockerfilePath: Dockerfile
-    env: GO111MODULE=on
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: TELEGRAM_TOKEN
         sync: false
@@ -19,5 +18,7 @@ services:
         sync: false
       - key: TEST_EMAIL
         sync: false
+      - key: GO111MODULE
+        value: "on"
     healthCheckPath: /healthz
     numInstances: 1 
