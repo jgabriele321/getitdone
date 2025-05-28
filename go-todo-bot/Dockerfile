@@ -1,19 +1,50 @@
 FROM golang:1.24.2-alpine AS builder
-WORKDIR /app
-COPY go-todo-bot/go.mod go-todo-bot/go.sum ./
-RUN go mod download
-COPY go-todo-bot/ .
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/bot
 
+# Set the working directory
+WORKDIR /build
+
+# Copy the Go module files first
+COPY go-todo-bot/go.mod go-todo-bot/go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the source code
+COPY go-todo-bot/ ./
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -tags netgo -ldflags '-s -w' -o app ./cmd/bot
+
+# Start from a fresh Alpine image
 FROM alpine:latest
+
+# Install necessary packages
 RUN apk --no-cache add ca-certificates tzdata
+
+# Set environment variables
 ENV TZ=UTC
 ENV PORT=8080
+
+# Create a non-root user
 RUN adduser -D -s /bin/sh appuser
+
+# Set the working directory
 WORKDIR /app
-COPY --from=builder /app/main .
+
+# Copy the binary from builder
+COPY --from=builder /build/app .
+
+# Copy the environment example file
 COPY go-todo-bot/env.example .env.example
-RUN chown appuser:appuser /app/main
+
+# Set ownership
+RUN chown -R appuser:appuser /app
+
+# Use the non-root user
 USER appuser
+
+# Expose the port
 EXPOSE ${PORT}
-CMD ["./main"]
+
+# Run the application
+CMD ["./app"]

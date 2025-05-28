@@ -1,7 +1,9 @@
 services:
   - type: web
     name: go-todo-bot
-    env: docker
+    runtime: docker
+    region: ohio
+    plan: free
     dockerfilePath: ./go-todo-bot/Dockerfile
     envVars:
       - key: TELEGRAM_TOKEN
