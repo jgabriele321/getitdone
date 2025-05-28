@@ -4,13 +4,13 @@ FROM golang:1.24.2-alpine AS builder
 WORKDIR /build
 
 # Copy the Go module files first
-COPY go-todo-bot/go.mod go-todo-bot/go.sum ./
+COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
 # Copy the source code
-COPY go-todo-bot/ ./
+COPY . ./
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -tags netgo -ldflags '-s -w' -o app ./cmd/bot
@@ -35,7 +35,7 @@ WORKDIR /app
 COPY --from=builder /build/app .
 
 # Copy the environment example file
-COPY go-todo-bot/env.example .env.example
+COPY env.example .env.example
 
 # Set ownership
 RUN chown -R appuser:appuser /app

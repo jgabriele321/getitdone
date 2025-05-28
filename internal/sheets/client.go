@@ -6,89 +6,52 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/giovannigabriele/go-todo-bot/internal/config"
 	"github.com/rs/zerolog/log"
 )
 
-// Client handles communication with Google Sheets via Apps Script
+// Client handles Google Sheets operations
 type Client struct {
-	scriptURL string
-}
-
-// Task represents a task to be added to the sheet
-type Task struct {
-	People      []string `json:"people"`
-	Client      string   `json:"client"`
-	Summary     string   `json:"summary"`
-	FullMessage string   `json:"fullMessage"`
-	DueDate     string   `json:"dueDate"`
-	BotNotes    string   `json:"botNotes,omitempty"`
-}
-
-// TeamMember represents a team member from the team sheet
-type TeamMember struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-// AddTasksRequest represents the request to add tasks
-type AddTasksRequest struct {
-	Action string `json:"action"`
-	Tasks  []Task `json:"tasks"`
-}
-
-// GetTeamRequest represents the request to get team members
-type GetTeamRequest struct {
-	Action string `json:"action"`
-}
-
-// GetTasksRequest represents the request to get tasks
-type GetTasksRequest struct {
-	Action string `json:"action"`
-	Status string `json:"status,omitempty"`
-}
-
-// Response represents the standard response from Apps Script
-type Response struct {
-	Status    string `json:"status"`
-	Message   string `json:"message,omitempty"`
-	RowsAdded int    `json:"rowsAdded,omitempty"`
-}
-
-// TeamResponse represents the response when getting team members
-type TeamResponse struct {
-	Status string       `json:"status"`
-	Team   []TeamMember `json:"team"`
-}
-
-// TasksResponse represents the response when getting tasks
-type TasksResponse struct {
-	Status string      `json:"status"`
-	Tasks  []SheetTask `json:"tasks"`
-}
-
-// SheetTask represents a task from the sheet
-type SheetTask struct {
-	Timestamp   time.Time `json:"timestamp"`
-	People      []string  `json:"people"`
-	Client      string    `json:"client"`
-	Summary     string    `json:"summary"`
-	FullMessage string    `json:"fullMessage"`
-	Status      string    `json:"status"`
-	DueDate     string    `json:"dueDate"`
-	BotNotes    string    `json:"botNotes"`
+	webhookURL string
+	client     *http.Client
 }
 
 // TaskRow represents a task row for the Google Sheet
 type TaskRow struct {
 	Timestamp   string   `json:"timestamp"`
 	People      []string `json:"people"`
+	Client      string   `json:"client"`
 	Summary     string   `json:"summary"`
 	FullMessage string   `json:"fullMessage"`
 	Status      string   `json:"status"`
+	DueDate     string   `json:"dueDate"`
 	BotNotes    string   `json:"botNotes"`
+}
+
+// AddTasksRequest represents the request to add tasks
+type AddTasksRequest struct {
+	Action string    `json:"action"`
+	Tasks  []TaskRow `json:"tasks"`
+}
+
+// GetTeamRequest represents the request to get team data
+type GetTeamRequest struct {
+	Action string `json:"action"`
+}
+
+// TeamMember represents a team member
+type TeamMember struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+// GetTeamResponse represents the response from getting team data
+type GetTeamResponse struct {
+	Status string       `json:"status"`
+	Team   []TeamMember `json:"team"`
+	Error  string       `json:"error,omitempty"`
 }
 
 // AddTasksResponse represents the response from adding tasks
@@ -100,15 +63,17 @@ type AddTasksResponse struct {
 }
 
 // NewClient creates a new Google Sheets client
-func NewClient(cfg *config.Config) *Client {
+func NewClient(webhookURL string) *Client {
 	return &Client{
-		scriptURL: cfg.GoogleScriptURL,
+		webhookURL: webhookURL,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
-// AddTasks adds new tasks to the Google Sheet
-func (c *Client) AddTasks(ctx context.Context, tasks []Task) error {
-	fmt.Printf("DEBUG: AddTasks called with %d TaskRow tasks\n", len(tasks))
+// AddTasks adds tasks to the Google Sheet
+func (c *Client) AddTasks(ctx context.Context, tasks []TaskRow) error {
 	log.Debug().Int("task_count", len(tasks)).Msg("Adding tasks to Google Sheets")
 
 	request := AddTasksRequest{
@@ -116,18 +81,12 @@ func (c *Client) AddTasks(ctx context.Context, tasks []Task) error {
 		Tasks:  tasks,
 	}
 
-	fmt.Printf("DEBUG: Created AddTasksRequest: %+v\n", request)
-
 	var response AddTasksResponse
 	if err := c.makeRequest(ctx, request, &response); err != nil {
-		fmt.Printf("DEBUG: makeRequest failed: %v\n", err)
 		return fmt.Errorf("failed to add tasks: %w", err)
 	}
 
-	fmt.Printf("DEBUG: AddTasksResponse: %+v\n", response)
-
 	if response.Status != "success" {
-		fmt.Printf("DEBUG: Response status is not success: %s, error: '%s'\n", response.Status, response.Error)
 		return fmt.Errorf("sheets API error: %s", response.Error)
 	}
 
@@ -138,112 +97,82 @@ func (c *Client) AddTasks(ctx context.Context, tasks []Task) error {
 	return nil
 }
 
-// GetTeam retrieves team members from the team sheet
+// GetTeam retrieves team members from the Google Sheet
 func (c *Client) GetTeam(ctx context.Context) ([]TeamMember, error) {
+	log.Debug().Msg("Getting team data from Google Sheets")
+
 	request := GetTeamRequest{
 		Action: "get_team",
 	}
 
-	var response TeamResponse
+	var response GetTeamResponse
 	if err := c.makeRequest(ctx, request, &response); err != nil {
 		return nil, fmt.Errorf("failed to get team: %w", err)
 	}
 
 	if response.Status != "success" {
-		return nil, fmt.Errorf("sheets API error getting team")
+		return nil, fmt.Errorf("sheets API error: %s", response.Error)
 	}
 
-	log.Debug().
-		Int("team_members", len(response.Team)).
-		Msg("Retrieved team members from Google Sheets")
+	log.Info().
+		Int("team_size", len(response.Team)).
+		Msg("Successfully retrieved team data")
 
 	return response.Team, nil
 }
 
-// GetTasks retrieves tasks from the sheet, optionally filtered by status
-func (c *Client) GetTasks(ctx context.Context, statusFilter string) ([]SheetTask, error) {
-	request := GetTasksRequest{
-		Action: "get_tasks",
-		Status: statusFilter,
+// CreateTaskRow creates a TaskRow from parsed task data
+func CreateTaskRow(people []string, client, summary, fullMessage, dueDate, botNotes string) TaskRow {
+	return TaskRow{
+		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		People:      people,
+		Client:      client,
+		Summary:     summary,
+		FullMessage: fullMessage,
+		Status:      "Not Started",
+		DueDate:     dueDate,
+		BotNotes:    botNotes,
 	}
-
-	var response TasksResponse
-	if err := c.makeRequest(ctx, request, &response); err != nil {
-		return nil, fmt.Errorf("failed to get tasks: %w", err)
-	}
-
-	if response.Status != "success" {
-		return nil, fmt.Errorf("sheets API error getting tasks")
-	}
-
-	log.Debug().
-		Int("tasks_count", len(response.Tasks)).
-		Str("status_filter", statusFilter).
-		Msg("Retrieved tasks from Google Sheets")
-
-	return response.Tasks, nil
 }
 
-// makeRequest makes an HTTP request to the Apps Script webhook
-func (c *Client) makeRequest(ctx context.Context, payload interface{}, response interface{}) error {
-	// Marshal request payload
-	jsonData, err := json.Marshal(payload)
+// makeRequest makes an HTTP request to the Google Apps Script webhook
+func (c *Client) makeRequest(ctx context.Context, request interface{}, response interface{}) error {
+	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	fmt.Printf("DEBUG: Making request to URL: %s\n", c.scriptURL)
-	fmt.Printf("DEBUG: Payload: %s\n", string(jsonData))
-
-	log.Debug().
-		Str("url", c.scriptURL).
-		RawJSON("payload", jsonData).
-		Msg("Making request to Google Sheets")
-
-	// Create HTTP request using standard client instead of retryable
-	req, err := http.NewRequestWithContext(ctx, "POST", c.scriptURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.webhookURL, bytes.NewBuffer(reqBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	// Use standard HTTP client
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
-		fmt.Printf("DEBUG: HTTP request failed: %v\n", err)
-		return fmt.Errorf("HTTP request failed: %w", err)
+		return fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Read response body for debugging
-	var responseBody bytes.Buffer
-	_, err = responseBody.ReadFrom(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	fmt.Printf("DEBUG: Status Code: %d\n", resp.StatusCode)
-	fmt.Printf("DEBUG: Response Body: %s\n", responseBody.String())
-
-	log.Debug().
-		Int("status_code", resp.StatusCode).
-		Str("response_body", responseBody.String()).
-		Msg("Received response from Google Sheets")
-
-	// Check status code
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP error: %d, body: %s", resp.StatusCode, responseBody.String())
+		return fmt.Errorf("HTTP request failed with status %d", resp.StatusCode)
 	}
 
-	// Decode response
-	if err := json.NewDecoder(&responseBody).Decode(response); err != nil {
-		fmt.Printf("DEBUG: JSON decode failed: %v\n", err)
-		fmt.Printf("DEBUG: Response body was: %s\n", responseBody.String())
-		return fmt.Errorf("failed to decode response: %w, body: %s", err, responseBody.String())
+	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	fmt.Printf("DEBUG: Successfully decoded response\n")
 	return nil
+}
+
+// BuildTeamEmailMap builds a map from team member names to emails
+func BuildTeamEmailMap(team []TeamMember) map[string]string {
+	emailMap := make(map[string]string)
+	for _, member := range team {
+		// Normalize name to lowercase for consistent lookup
+		normalizedName := strings.ToLower(strings.TrimSpace(member.Name))
+		emailMap[normalizedName] = member.Email
+	}
+	return emailMap
 }

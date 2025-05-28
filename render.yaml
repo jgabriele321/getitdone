@@ -4,7 +4,7 @@ services:
     runtime: docker
     region: ohio
     plan: free
-    dockerfilePath: ./go-todo-bot/Dockerfile
+    dockerfilePath: Dockerfile
     envVars:
       - key: TELEGRAM_TOKEN
         sync: false

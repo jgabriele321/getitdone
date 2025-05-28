@@ -3,22 +3,19 @@ package cron
 import (
 	"time"
 
-	"github.com/giovannigabriele/go-todo-bot/internal/config"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog/log"
 )
 
 // Manager handles scheduled tasks
 type Manager struct {
-	cron   *cron.Cron
-	config *config.Config
+	cron *cron.Cron
 }
 
 // NewManager creates a new cron manager
-func NewManager(cfg *config.Config) *Manager {
+func NewManager() *Manager {
 	return &Manager{
-		cron:   cron.New(cron.WithLocation(time.UTC)),
-		config: cfg,
+		cron: cron.New(cron.WithLocation(time.UTC)),
 	}
 }
 
@@ -31,9 +28,6 @@ func (m *Manager) Start() {
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to schedule daily digest")
 	}
-
-	// For testing, you can uncomment this to run every minute
-	// _, _ = m.cron.AddFunc("@every 1m", m.sendDailyDigest)
 
 	m.cron.Start()
 	log.Info().Msg("Cron scheduler started")
