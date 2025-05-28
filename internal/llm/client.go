@@ -175,7 +175,7 @@ Extract:
 1. people: array of names (lowercase) or ["team"] if no specific person
 2. client: analyze the message to find client name (e.g. "for Microsoft" → "Microsoft", "to Johnny" → "Johnny")
 3. summary: brief task description (max 80 chars)
-4. dueDate: convert to YYYY-MM-DD (EOD/today=%s, tomorrow=%s, saturday=%s)
+4. dueDate: ONLY if explicitly mentioned in message, convert to YYYY-MM-DD. If no date mentioned, use "unclear"
 5. confidence: 0.0-1.0
 
 Return this exact JSON format:
@@ -191,10 +191,7 @@ Return this exact JSON format:
 }`,
 		currentTime.Format("2006-01-02"),
 		message,
-		currentTime.Format("2006-01-02"), // today
-		currentTime.AddDate(0, 0, 1).Format("2006-01-02"),    // tomorrow
-		c.getNextWeekday(time.Saturday).Format("2006-01-02"), // next saturday
-		currentTime.Format("2006-01-02"),                     // today again for example
+		currentTime.Format("2006-01-02"), // today for example
 		message)
 }
 
