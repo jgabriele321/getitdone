@@ -20,8 +20,10 @@ type Client struct {
 // Task represents a task to be added to the sheet
 type Task struct {
 	People      []string `json:"people"`
+	Client      string   `json:"client"`
 	Summary     string   `json:"summary"`
 	FullMessage string   `json:"fullMessage"`
+	DueDate     string   `json:"dueDate"`
 	BotNotes    string   `json:"botNotes,omitempty"`
 }
 
@@ -71,9 +73,11 @@ type TasksResponse struct {
 type SheetTask struct {
 	Timestamp   time.Time `json:"timestamp"`
 	People      []string  `json:"people"`
+	Client      string    `json:"client"`
 	Summary     string    `json:"summary"`
 	FullMessage string    `json:"fullMessage"`
 	Status      string    `json:"status"`
+	DueDate     string    `json:"dueDate"`
 	BotNotes    string    `json:"botNotes"`
 }
 

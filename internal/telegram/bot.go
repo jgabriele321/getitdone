@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/giovannigabriele/go-todo-bot/internal/config"
 	"github.com/giovannigabriele/go-todo-bot/internal/llm"
@@ -101,8 +102,10 @@ func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) {
 	for _, task := range parseResponse.Tasks {
 		sheetTask := sheets.Task{
 			People:      task.People,
+			Client:      task.Client,
 			Summary:     task.Summary,
 			FullMessage: message.Text,
+			DueDate:     task.DueDate,
 			BotNotes:    fmt.Sprintf("Confidence: %.2f, Parsed by: %s", task.Confidence, b.llmClient.GetModel()),
 		}
 		sheetTasks = append(sheetTasks, sheetTask)
@@ -212,19 +215,19 @@ func (b *Bot) buildSuccessResponse(parseResponse *llm.ParseResponse) string {
 
 	for i, task := range parseResponse.Tasks {
 		peopleStr := "👥 " + formatPeople(task.People)
-		response += fmt.Sprintf("%d. %s\n   📝 %s\n\n", i+1, peopleStr, task.Summary)
+		clientStr := "🏢 " + formatClient(task.Client)
+		dueDateStr := "📅 " + formatDueDate(task.DueDate)
+
+		response += fmt.Sprintf("%d. %s\n   %s\n   %s\n   📝 %s\n\n",
+			i+1,
+			peopleStr,
+			clientStr,
+			dueDateStr,
+			task.Summary)
 	}
 
 	response += "📊 Check the Google Sheet for full details!"
 	return response
-}
-
-// sendErrorMessage sends an error message to the user
-func (b *Bot) sendErrorMessage(chatID int64, text string) {
-	msg := tgbotapi.NewMessage(chatID, "❌ "+text)
-	if _, err := b.api.Send(msg); err != nil {
-		log.Error().Err(err).Msg("Failed to send error message")
-	}
 }
 
 // formatPeople formats the people list for display
@@ -255,4 +258,28 @@ func formatPeople(people []string) string {
 		}
 	}
 	return result
+}
+
+// formatClient formats the client name for display
+func formatClient(client string) string {
+	if client == "" || client == "unclear" {
+		return "Client: unclear"
+	}
+	return "Client: " + strings.Title(client)
+}
+
+// formatDueDate formats the due date for display
+func formatDueDate(dueDate string) string {
+	if dueDate == "" || dueDate == "unclear" {
+		return "Due: unclear"
+	}
+	return "Due: " + dueDate
+}
+
+// sendErrorMessage sends an error message to the user
+func (b *Bot) sendErrorMessage(chatID int64, text string) {
+	msg := tgbotapi.NewMessage(chatID, "❌ "+text)
+	if _, err := b.api.Send(msg); err != nil {
+		log.Error().Err(err).Msg("Failed to send error message")
+	}
 }

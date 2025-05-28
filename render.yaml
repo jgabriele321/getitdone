@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: go-todo-bot
+    env: docker
+    dockerfilePath: ./go-todo-bot/Dockerfile
+    envVars:
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GOOGLE_SCRIPT_URL
+        sync: false
+      - key: SENDGRID_KEY
+        sync: false
+      - key: ADMIN_TELEGRAM_ID
+        sync: false
+      - key: TEST_EMAIL
+        sync: false
+    healthCheckPath: /healthz
+    numInstances: 1
+    buildCommand: docker build -t go-todo-bot ./go-todo-bot
+    startCommand: docker run -p $PORT:8080 go-todo-bot 

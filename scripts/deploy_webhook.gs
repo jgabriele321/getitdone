@@ -225,12 +225,20 @@ function handleAddTasks(sheet, tasks) {
   
   // Process each task
   tasks.forEach(task => {
+    // Handle dueDate - convert "Unsure" to empty string for date validation
+    let dueDate = task.dueDate || '';
+    if (dueDate === 'Unsure' || dueDate === 'unclear') {
+      dueDate = ''; // Empty string passes date validation
+    }
+    
     rows.push([
       new Date().toISOString(),                    // Timestamp
       task.people ? task.people.join(', ') : '',   // People (comma-separated)
-      task.summary || '',                           // Summary
-      task.fullMessage || '',                       // FullMessage
-      'Not Started',                                // Status (default)
+      task.client || 'unclear',                    // Client (default to unclear)
+      task.summary || '',                          // Summary
+      task.fullMessage || '',                      // FullMessage
+      'Not Started',                               // Status (default)
+      dueDate,                                     // DueDate (empty if "Unsure")
       task.botNotes || ''                          // BotNotes
     ]);
   });
@@ -238,7 +246,7 @@ function handleAddTasks(sheet, tasks) {
   // Append all rows at once
   if (rows.length > 0) {
     const lastRow = sheet.getLastRow();
-    sheet.getRange(lastRow + 1, 1, rows.length, 6).setValues(rows);
+    sheet.getRange(lastRow + 1, 1, rows.length, 8).setValues(rows);
   }
   
   return ContentService
@@ -284,17 +292,19 @@ function handleGetTasks(sheet, statusFilter) {
   
   // Skip header row
   for (let i = 1; i < data.length; i++) {
-    const status = data[i][4]; // Status column
+    const status = data[i][5]; // Status column (now at index 5)
     
     // Filter by status if provided
     if (!statusFilter || status !== statusFilter) {
       tasks.push({
         timestamp: data[i][0],
         people: data[i][1].toString().split(',').map(p => p.trim()),
-        summary: data[i][2],
-        fullMessage: data[i][3],
-        status: data[i][4],
-        botNotes: data[i][5]
+        client: data[i][2],
+        summary: data[i][3],
+        fullMessage: data[i][4],
+        status: data[i][5],
+        dueDate: data[i][6],
+        botNotes: data[i][7]
       });
     }
   }
@@ -321,7 +331,7 @@ function initializeSheets() {
   }
   
   // Set headers for todo sheet
-  const todoHeaders = ['Timestamp', 'People', 'Summary', 'FullMessage', 'Status', 'BotNotes'];
+  const todoHeaders = ['Timestamp', 'People', 'Client', 'Summary', 'FullMessage', 'Status', 'DueDate', 'BotNotes'];
   todoSheet.getRange(1, 1, 1, todoHeaders.length).setValues([todoHeaders]);
   todoSheet.getRange(1, 1, 1, todoHeaders.length).setFontWeight('bold');
   
@@ -330,7 +340,14 @@ function initializeSheets() {
     .requireValueInList(['Not Started', 'In Progress', 'Complete'], true)
     .setAllowInvalid(false)
     .build();
-  todoSheet.getRange('E2:E').setDataValidation(statusRule);
+  todoSheet.getRange('F2:F').setDataValidation(statusRule);
+
+  // Add date format validation for DueDate column
+  const dueDateRule = SpreadsheetApp.newDataValidation()
+    .requireDate()
+    .setAllowInvalid(false)
+    .build();
+  todoSheet.getRange('G2:G').setDataValidation(dueDateRule);
   
   // Initialize team sheet
   let teamSheet = sheet.getSheetByName('team');
@@ -368,8 +385,10 @@ function testScript() {
         action: 'add_tasks',
         tasks: [{
           people: ['alice', 'bob'],
+          client: 'Microsoft',
           summary: 'Test task from Apps Script',
           fullMessage: 'This is a test task created by the test function',
+          dueDate: '2024-03-15',
           botNotes: 'Test successful'
         }]
       })
