@@ -337,3 +337,108 @@ Ready to begin implementation with Task 0.1: Creating a comprehensive test data 
 - Task splitting scenarios
 - Edge cases (empty messages, very long text, special characters)
 - Error scenarios for testing fallback behavior
+
+## New Feature Implementation Plan: Enhanced Parsing & Phase 2 Transition
+
+### Task 1.8: Enhanced Task Parsing
+- [ ] **Task 1.8.1**: Update Google Sheets Schema
+  - Success Criteria:
+    - Add "Client" and "DueDate" columns to todo sheet
+    - Add data validation for Client column (from client list)
+    - Add date format validation for DueDate column
+  - Steps:
+    1. Modify `deploy_webhook.gs` to add new columns
+    2. Update schema validation rules
+    3. Add migration function for existing sheets
+
+- [ ] **Task 1.8.2**: Enhance LLM Prompt
+  - Success Criteria:
+    - LLM correctly identifies client mentions
+    - LLM extracts due dates in standard format
+    - LLM marks unclear fields appropriately
+  - Steps:
+    1. Update prompt template with new fields
+    2. Add example messages with client/date variations
+    3. Implement "unclear" marking logic
+    4. Add date normalization (convert "tomorrow", "next week", etc.)
+
+- [ ] **Task 1.8.3**: Update Go Structures
+  - Success Criteria:
+    - Task struct includes Client and DueDate fields
+    - JSON marshaling handles new fields correctly
+    - Sheets client supports new columns
+  - Steps:
+    1. Update Task struct in `internal/types`
+    2. Modify sheets client to handle new columns
+    3. Update response formatting for Telegram messages
+
+### Task 1.9: Manual Testing Suite
+- [ ] **Task 1.9.1**: Create Test Cases
+  - Success Criteria:
+    - Test suite covers all parsing scenarios
+    - Each test case has expected output
+  - Test Categories:
+    1. Client mentions (explicit, implicit, unclear)
+    2. Due dates (explicit dates, relative dates, unclear)
+    3. Combined scenarios (client + date + assignee)
+    4. Edge cases (missing info, multiple clients)
+
+- [ ] **Task 1.9.2**: Execute Manual Tests
+  - Success Criteria:
+    - All test cases pass
+    - Results documented in test log
+  - Test Process:
+    1. Run each test case through Telegram
+    2. Verify Google Sheets entries
+    3. Document any parsing issues
+    4. Validate error handling
+
+### Task 1.10: Phase 2 Branch Setup
+- [ ] **Task 1.10.1**: Create Phase 2 Branch
+  - Success Criteria:
+    - Clean branch from main
+    - All current features working
+  - Steps:
+    1. Ensure main branch is stable
+    2. Create 'phase-2' branch
+    3. Update version tags
+    4. Document Phase 2 goals
+
+## Test Messages for Manual Testing
+
+1. Client & Date Explicit:
+   - "Have Microsoft review the proposal by next Friday"
+   - "Schedule Apple meeting for 3/15/24"
+
+2. Client Implicit:
+   - "Follow up with the Cupertino team about iOS integration"
+   - "Send the AWS migration docs to Seattle office"
+
+3. Date Relative:
+   - "Team to complete security audit within 2 weeks"
+   - "Sarah to present findings by end of month"
+
+4. Unclear Scenarios:
+   - "Check status of the Android project"
+   - "Update documentation when possible"
+
+5. Multiple Elements:
+   - "Prepare Google presentation for next week AND schedule Microsoft review for end of month"
+   - "Sarah to meet Netflix team tomorrow, then Bob to follow up with pricing next week"
+
+## Success Criteria for Enhanced Parsing
+
+1. Client Detection:
+   - Explicit mentions (e.g., "Microsoft", "Apple")
+   - Implicit mentions (e.g., "Cupertino team" → Apple)
+   - Mark as "unclear" when ambiguous
+
+2. Due Date Parsing:
+   - Explicit dates (e.g., "March 15th")
+   - Relative dates (e.g., "next week", "in 2 days")
+   - Mark as "unclear" when no timeline given
+
+3. Error Handling:
+   - Graceful handling of ambiguous cases
+   - Clear feedback in BotNotes column
+   - User-friendly error messages
