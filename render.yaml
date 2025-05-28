@@ -5,6 +5,7 @@ services:
     region: ohio
     plan: free
     dockerfilePath: Dockerfile
+    buildCommand: go build -tags netgo -ldflags '-s -w' -o app ./cmd/bot
     envVars:
       - key: TELEGRAM_TOKEN
         sync: false
