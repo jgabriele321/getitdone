@@ -47,5 +47,5 @@ Thumbs.db
 dead_letter.log
 
 # Build artifacts
-/go-todo-bot
+/go-todo-bot/bot
 dist/ 

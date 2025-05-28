@@ -17,6 +17,4 @@ services:
       - key: TEST_EMAIL
         sync: false
     healthCheckPath: /healthz
-    numInstances: 1
-    buildCommand: cd go-todo-bot && go build -tags netgo -ldflags '-s -w' -o ../app ./cmd/bot
-    startCommand: ./app 
+    numInstances: 1 
