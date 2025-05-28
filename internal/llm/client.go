@@ -24,7 +24,9 @@ type Client struct {
 // Task represents a parsed task
 type Task struct {
 	People     []string `json:"people"`
+	Client     string   `json:"client"`
 	Summary    string   `json:"summary"`
+	DueDate    string   `json:"dueDate"`
 	Confidence float64  `json:"confidence"`
 }
 
@@ -127,7 +129,9 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 			Tasks: []Task{
 				{
 					People:     []string{"team"},
+					Client:     "Internal",
 					Summary:    c.extractSummary(message),
+					DueDate:    "unclear",
 					Confidence: 0.5,
 				},
 			},
@@ -139,6 +143,16 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 	for i := range parseResp.Tasks {
 		parseResp.Tasks[i].People = c.normalizeNames(parseResp.Tasks[i].People)
 		parseResp.Tasks[i].Summary = c.truncateSummary(parseResp.Tasks[i].Summary)
+
+		// Ensure client field is set
+		if parseResp.Tasks[i].Client == "" {
+			parseResp.Tasks[i].Client = "Internal"
+		}
+
+		// Ensure dueDate field is set
+		if parseResp.Tasks[i].DueDate == "" {
+			parseResp.Tasks[i].DueDate = "unclear"
+		}
 	}
 
 	log.Info().
@@ -151,34 +165,37 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 
 // buildPrompt creates the prompt for the LLM
 func (c *Client) buildPrompt(message string) string {
-	return fmt.Sprintf(`You are a task parser for a team management system. Parse the following message and extract task information.
+	currentTime := time.Now()
+	return fmt.Sprintf(`You are a task parser. Parse this message and return ONLY valid JSON.
 
+Current Date: %s
 Message: "%s"
 
-Rules:
-1. Identify WHO is responsible (person names or "team" if no specific person)
-2. Extract WHAT needs to be done (the actual task/action)
-3. Normalize names to lowercase (e.g., "Lilly" → "lilly", "The Team" → "team")
-4. For multiple tasks, look for "AND" or clear task boundaries
-5. Keep summaries concise but descriptive (max 80 chars)
-6. If no specific person is mentioned, assign to "team"
+Extract:
+1. people: array of names (lowercase) or ["team"] if no specific person
+2. client: analyze the message to find client name (e.g. "for Microsoft" → "Microsoft", "to Johnny" → "Johnny")
+3. summary: brief task description (max 80 chars)
+4. dueDate: convert to YYYY-MM-DD (EOD/today=%s, tomorrow=%s, saturday=%s)
+5. confidence: 0.0-1.0
 
-Examples:
-- "Lilly to reach out to Johnny to get a quote" → Person: lilly, Task: "Reach out to Johnny to get a quote for journalist"
-- "Jemma, Lexi, and Johnny to set up meeting" → People: [jemma, lexi, johnny], Task: "Set up meeting"
-- "We need to contact all vendors" → People: [team], Task: "Contact all vendors"
-
-Return JSON format:
+Return this exact JSON format:
 {
-  "tasks": [
-    {
-      "people": ["lilly"],
-      "summary": "Reach out to Johnny to get a quote for journalist",
-      "confidence": 0.95
-    }
-  ],
+  "tasks": [{
+    "people": ["lexi"],
+    "client": "Johnny", 
+    "summary": "Give Johnny a kiss by EOD today",
+    "dueDate": "%s",
+    "confidence": 0.95
+  }],
   "original_message": "%s"
-}`, message, message)
+}`,
+		currentTime.Format("2006-01-02"),
+		message,
+		currentTime.Format("2006-01-02"), // today
+		currentTime.AddDate(0, 0, 1).Format("2006-01-02"),    // tomorrow
+		c.getNextWeekday(time.Saturday).Format("2006-01-02"), // next saturday
+		currentTime.Format("2006-01-02"),                     // today again for example
+		message)
 }
 
 // normalizeNames normalizes person names
@@ -215,6 +232,16 @@ func (c *Client) truncateSummary(summary string) string {
 		return summary
 	}
 	return summary[:maxLength-3] + "..."
+}
+
+// getNextWeekday returns the next occurrence of the given weekday
+func (c *Client) getNextWeekday(weekday time.Weekday) time.Time {
+	now := time.Now()
+	days := int(weekday - now.Weekday())
+	if days <= 0 {
+		days += 7
+	}
+	return now.AddDate(0, 0, days)
 }
 
 // extractSummary creates a basic summary from the message

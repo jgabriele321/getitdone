@@ -133,8 +133,10 @@ func (h *Handler) processTaskMessage(ctx context.Context, message *tgbotapi.Mess
 
 		taskRow := sheets.CreateTaskRow(
 			task.People,
+			task.Client,
 			summary,
 			message.Text,
+			task.DueDate,
 			botNotes,
 		)
 		taskRows = append(taskRows, taskRow)
@@ -158,8 +160,10 @@ func (h *Handler) handleParseError(message *tgbotapi.Message, err error) {
 	// Create fallback task assigned to "team"
 	taskRow := sheets.CreateTaskRow(
 		[]string{"team"},
+		"Internal",
 		h.extractSimpleSummary(message.Text),
 		message.Text,
+		"unclear",
 		fmt.Sprintf("Parse error: %s", err.Error()),
 	)
 

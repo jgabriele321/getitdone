@@ -20,12 +20,14 @@ type Client struct {
 
 // TaskRow represents a task row for the Google Sheet
 type TaskRow struct {
-	Timestamp   string `json:"timestamp"`
+	Timestamp   string   `json:"timestamp"`
 	People      []string `json:"people"`
-	Summary     string `json:"summary"`
-	FullMessage string `json:"fullMessage"`
-	Status      string `json:"status"`
-	BotNotes    string `json:"botNotes"`
+	Client      string   `json:"client"`
+	Summary     string   `json:"summary"`
+	FullMessage string   `json:"fullMessage"`
+	Status      string   `json:"status"`
+	DueDate     string   `json:"dueDate"`
+	BotNotes    string   `json:"botNotes"`
 }
 
 // AddTasksRequest represents the request to add tasks
@@ -47,9 +49,9 @@ type TeamMember struct {
 
 // GetTeamResponse represents the response from getting team data
 type GetTeamResponse struct {
-	Status  string       `json:"status"`
-	Team    []TeamMember `json:"team"`
-	Error   string       `json:"error,omitempty"`
+	Status string       `json:"status"`
+	Team   []TeamMember `json:"team"`
+	Error  string       `json:"error,omitempty"`
 }
 
 // AddTasksResponse represents the response from adding tasks
@@ -120,13 +122,15 @@ func (c *Client) GetTeam(ctx context.Context) ([]TeamMember, error) {
 }
 
 // CreateTaskRow creates a TaskRow from parsed task data
-func CreateTaskRow(people []string, summary, fullMessage, botNotes string) TaskRow {
+func CreateTaskRow(people []string, client, summary, fullMessage, dueDate, botNotes string) TaskRow {
 	return TaskRow{
 		Timestamp:   time.Now().UTC().Format(time.RFC3339),
 		People:      people,
+		Client:      client,
 		Summary:     summary,
 		FullMessage: fullMessage,
 		Status:      "Not Started",
+		DueDate:     dueDate,
 		BotNotes:    botNotes,
 	}
 }
