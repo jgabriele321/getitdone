@@ -35,8 +35,8 @@ func NewBot(cfg *config.Config) (*Bot, error) {
 	return &Bot{
 		api:          bot,
 		config:       cfg,
-		llmClient:    llm.NewClient(cfg),
-		sheetsClient: sheets.NewClient(cfg),
+		llmClient:    llm.NewClient(cfg.OpenRouterAPIKey),
+		sheetsClient: sheets.NewClient(cfg.GoogleScriptURL),
 	}, nil
 }
 
@@ -98,16 +98,16 @@ func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) {
 	}
 
 	// Convert to sheet tasks
-	var sheetTasks []sheets.Task
+	var sheetTasks []sheets.TaskRow
 	for _, task := range parseResponse.Tasks {
-		sheetTask := sheets.Task{
-			People:      task.People,
-			Client:      task.Client,
-			Summary:     task.Summary,
-			FullMessage: message.Text,
-			DueDate:     task.DueDate,
-			BotNotes:    fmt.Sprintf("Confidence: %.2f, Parsed by: %s", task.Confidence, b.llmClient.GetModel()),
-		}
+		sheetTask := sheets.CreateTaskRow(
+			task.People,
+			task.Client,
+			task.Summary,
+			message.Text,
+			task.DueDate,
+			fmt.Sprintf("Confidence: %.2f, Parsed by: %s", task.Confidence, b.llmClient.GetModel()),
+		)
 		sheetTasks = append(sheetTasks, sheetTask)
 	}
 

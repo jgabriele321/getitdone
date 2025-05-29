@@ -70,6 +70,11 @@ func NewClient(apiKey string) *Client {
 	}
 }
 
+// GetModel returns the current model being used
+func (c *Client) GetModel() string {
+	return c.model
+}
+
 // ParseMessage parses a message using the LLM
 func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseResponse, error) {
 	log.Debug().Str("message", message).Msg("Parsing message with LLM")

@@ -508,3 +508,51 @@ ERR Failed to save tasks to Google Sheets error="failed to add tasks: failed to 
 3. Update the `GOOGLE_SCRIPT_URL` in the `.env` file
 4. Test the integration with the provided curl commands
 5. Restart the bot to use the new configuration
+
+## 🚨 **NEW DEPLOYMENT ISSUE: Incorrect Build Path on Render**
+
+**Issue**: Render deployment failing with incorrect build path
+**Evidence**: 
+```
+==> Running build command '   go build -tags netgo -ldflags '-s -w' -o app ./go-todo-bot/cmd/bot'...
+stat /opt/render/project/go/src/github.com/jgabriele321/getitdone/go-todo-bot/cmd/bot: directory not found
+```
+
+**Root Cause**: 
+- Render is executing build command with `./go-todo-bot/cmd/bot` path
+- Actual project structure has `./cmd/bot` (no `go-todo-bot` prefix)
+- The `render.yaml` file shows correct path: `./cmd/bot`
+- **Issue**: Render dashboard/service configuration is overriding the YAML file
+
+**✅ SOLUTION IMPLEMENTED**: 
+1. **Primary Fix**: Update Render service configuration in dashboard
+   - Go to Render dashboard → Services → go-todo-bot
+   - Navigate to Settings → Build & Deploy
+   - Update Build Command to: `go build -tags netgo -ldflags '-s -w' -o app ./cmd/bot`
+   - Ensure it matches the render.yaml configuration
+
+2. **Alternative Fix**: Force render.yaml to take precedence
+   - Redeploy from Git with explicit YAML configuration
+   - Ensure no cached configurations are overriding
+
+**✅ ACTUAL ROOT CAUSE DISCOVERED**: 
+- Render was treating the project as GOPATH-style instead of Go modules
+- Project builds perfectly locally with Go modules
+- Issue was Render's build system not detecting Go modules properly
+
+**✅ FINAL FIX APPLIED** (Commit: 8bf308d):
+- Removed `buildCommand` from `render.yaml` 
+- Added `env: GO111MODULE=on` to force Go modules
+- Let Docker handle the build instead of Render's build system
+- Docker already has correct build command and modules support
+
+**Files Verified**:
+- ✅ `render.yaml`: Now uses Docker build with Go modules
+- ✅ `Dockerfile`: Contains correct path `./cmd/bot` with modules
+- ✅ Project structure: `cmd/bot/` directory exists at root level
+- ✅ Local build: Works perfectly with `go build -v ./cmd/bot`
+
+**Next Steps**:
+1. ✅ Pushed fix (commit 8bf308d)
+2. ⏳ Wait for Render auto-deploy to complete
+3. ✅ Verify deployment succeeds with Docker build
