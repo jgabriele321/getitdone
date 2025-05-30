@@ -20,5 +20,7 @@ services:
         sync: false
       - key: GO111MODULE
         value: "on"
+      - key: PORT
+        value: "8080"
     healthCheckPath: /healthz
     numInstances: 1 

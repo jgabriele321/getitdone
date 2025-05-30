@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -60,6 +61,30 @@ func main() {
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start health check server
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		})
+
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "10000"
+		}
+
+		server := &http.Server{
+			Addr:    ":" + port,
+			Handler: mux,
+		}
+
+		log.Info().Str("port", port).Msg("Starting health check server")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error().Err(err).Msg("Health check server error")
+		}
+	}()
 
 	go func() {
 		sig := <-sigChan
