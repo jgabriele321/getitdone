@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,9 +11,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/giovannigabriele/go-todo-bot/internal/config"
-	"github.com/giovannigabriele/go-todo-bot/internal/cron"
-	"github.com/giovannigabriele/go-todo-bot/internal/health"
 	"github.com/giovannigabriele/go-todo-bot/internal/llm"
+	"github.com/giovannigabriele/go-todo-bot/internal/queue"
 	"github.com/giovannigabriele/go-todo-bot/internal/sheets"
 	"github.com/giovannigabriele/go-todo-bot/internal/telegram"
 )
@@ -22,6 +20,11 @@ import (
 func main() {
 	// Configure logging
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+	if os.Getenv("DEBUG") == "true" {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 
 	log.Info().Msg("Starting TODO Bot")
 
@@ -31,68 +34,46 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
-	// Create context that will be canceled on interrupt
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Initialize clients
+	// Create LLM client
 	llmClient := llm.NewClient(cfg.OpenRouterAPIKey)
+
+	// Create Google Sheets client
 	sheetsClient := sheets.NewClient(cfg.GoogleScriptURL)
 
-	// Initialize Telegram handler
-	telegramHandler, err := telegram.NewHandler(cfg.TelegramToken, llmClient, sheetsClient)
+	// Create queue manager
+	queueManager, err := queue.NewManager(cfg.DatabasePath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create queue manager")
+	}
+	defer queueManager.Close()
+
+	// Create batch-capable Telegram handler
+	handler, err := telegram.NewBatchHandler(cfg.TelegramToken, llmClient, sheetsClient, queueManager)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create Telegram handler")
 	}
 
-	// Create and start cron manager
-	cronManager := cron.NewManager()
-	cronManager.Start()
-	defer cronManager.Stop()
+	// Create context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// Create HTTP server for health check
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", health.Handler())
-
-	server := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: mux,
-	}
-
-	// Start HTTP server
-	go func() {
-		log.Info().Str("port", cfg.Port).Msg("Starting HTTP server")
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error().Err(err).Msg("HTTP server error")
-		}
-	}()
-
-	// Start bot in a goroutine
-	go func() {
-		if err := telegramHandler.Start(ctx); err != nil {
-			log.Error().Err(err).Msg("Bot error")
-			cancel()
-		}
-	}()
-
-	// Wait for interrupt signal
+	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
 
-	// Graceful shutdown
-	log.Info().Msg("Shutting down...")
+	go func() {
+		sig := <-sigChan
+		log.Info().Str("signal", sig.String()).Msg("Received shutdown signal")
+		cancel()
+	}()
 
-	// Shutdown HTTP server
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownCancel()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Error().Err(err).Msg("HTTP server shutdown error")
+	// Start the bot
+	log.Info().Msg("Starting TODO bot...")
+	if err := handler.Start(ctx); err != nil && err != context.Canceled {
+		log.Fatal().Err(err).Msg("Bot error")
 	}
 
-	// Cancel context to stop bot
-	cancel()
+	log.Info().Msg("Bot shutdown complete")
 }
 
 // setupLogging configures the logger

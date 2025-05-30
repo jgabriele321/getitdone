@@ -85,6 +85,10 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 		Model: c.model,
 		Messages: []Message{
 			{
+				Role:    "system",
+				Content: "You are a task parser that ONLY returns valid JSON. Never include explanations or additional text.",
+			},
+			{
 				Role:    "user",
 				Content: prompt,
 			},
@@ -125,6 +129,9 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 
 	content := openRouterResp.Choices[0].Message.Content
 
+	// Clean the content - remove any non-JSON text
+	content = regexp.MustCompile(`(?s)^.*?(\{.*\}).*?$`).ReplaceAllString(content, "$1")
+
 	// Try to parse the JSON response
 	var parseResp ParseResponse
 	if err := json.Unmarshal([]byte(content), &parseResp); err != nil {
@@ -150,13 +157,23 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 		parseResp.Tasks[i].Summary = c.truncateSummary(parseResp.Tasks[i].Summary)
 
 		// Ensure client field is set
-		if parseResp.Tasks[i].Client == "" {
-			parseResp.Tasks[i].Client = "Internal"
+		if parseResp.Tasks[i].Client == "" || parseResp.Tasks[i].Client == "Internal" {
+			// For task chains, try to use the client from the first task
+			if i > 0 && parseResp.Tasks[0].Client != "Internal" && parseResp.Tasks[0].Client != "Unsure" {
+				parseResp.Tasks[i].Client = parseResp.Tasks[0].Client
+			} else {
+				parseResp.Tasks[i].Client = "Unsure"
+			}
 		}
 
 		// Ensure dueDate field is set
 		if parseResp.Tasks[i].DueDate == "" {
 			parseResp.Tasks[i].DueDate = "Unsure"
+		}
+
+		// If confidence not set, use a default
+		if parseResp.Tasks[i].Confidence == 0 {
+			parseResp.Tasks[i].Confidence = 0.8
 		}
 	}
 
@@ -171,32 +188,49 @@ func (c *Client) ParseMessage(ctx context.Context, message string) (*ParseRespon
 // buildPrompt creates the prompt for the LLM
 func (c *Client) buildPrompt(message string) string {
 	currentTime := time.Now()
-	return fmt.Sprintf(`You are a task parser. Parse this message and return ONLY valid JSON.
+	return fmt.Sprintf(`Parse this message into tasks and return ONLY a JSON object, no other text.
 
 Current Date: %s
 Message: "%s"
 
-Extract:
-1. people: array of names (lowercase) or ["team"] if no specific person
-2. client: analyze the message to find client name (e.g. "for Microsoft" → "Microsoft", "to Johnny" → "Johnny")
-3. summary: brief task description (max 80 chars)
-4. dueDate: ONLY if explicitly mentioned in message, convert to YYYY-MM-DD. If no date mentioned, use "Unsure"
-5. confidence: 0.0-1.0
+Rules:
+1. Split multi-task messages into separate tasks (look for bullet points, "AND", or clear task boundaries)
+2. For each task:
+   - people: array of who is DOING the task (lowercase) or ["team"] if unclear
+   - client: who the task is FOR. Important rules for client:
+     * If task is part of a chain/dependency, use the same client for all related tasks
+     * If someone is asking for something, they are the client
+     * If unclear, use "Unsure"
+   - summary: brief task description (max 80 chars)
+   - dueDate: ONLY if explicitly mentioned (YYYY-MM-DD format)
+   - confidence: 0.0-1.0
 
-Return this exact JSON format:
+Example Input: "Gemma to ask oxccu for press release, then Lilly to draft it by friday"
+Example Output:
 {
-  "tasks": [{
-    "people": ["lexi"],
-    "client": "Johnny", 
-    "summary": "Give Johnny a kiss by EOD today",
-    "dueDate": "%s",
-    "confidence": 0.95
-  }],
+  "tasks": [
+    {
+      "people": ["gemma"],
+      "client": "oxccu",
+      "summary": "Ask for press release",
+      "dueDate": "Unsure",
+      "confidence": 0.95
+    },
+    {
+      "people": ["lilly"],
+      "client": "oxccu",
+      "summary": "Draft press release",
+      "dueDate": "%s",
+      "confidence": 0.95
+    }
+  ],
   "original_message": "%s"
-}`,
+}
+
+Return ONLY the JSON for the given message, no other text:`,
 		currentTime.Format("2006-01-02"),
 		message,
-		currentTime.Format("2006-01-02"), // today for example
+		currentTime.AddDate(0, 0, 5).Format("2006-01-02"), // Example future date
 		message)
 }
 

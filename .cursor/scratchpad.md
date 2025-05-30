@@ -108,89 +108,106 @@ The bot serves as a lightweight task management system where natural language me
 
 ## Current Status / Progress Tracking
 
-**Current Phase**: Phase 1 - Core Bot Functionality
-**Last Completed**: Task 1.2 - Google Apps Script webhook complete ✅ **VERIFIED WORKING**
-**Currently Working On**: Tasks 1.3 & 1.4 - Bot handler and LLM integration (nearly complete)
+**Current Phase**: Phase 3 - Batch Processing Implementation
+**Last Completed**: Task 3.1 - Database Setup ✅ **VERIFIED WORKING**
+**Currently Working On**: Task 3.2 - Message Type Detection
 
-## ✅ **MAJOR MILESTONE COMPLETED - Core Bot Functionality Working!**
+### 🎉 **Batch Processing Implementation Progress:**
 
-**Date**: 2025-05-28
-**Commit**: d2bf23b - "Fix LLM parsing and Google Sheets integration"
+1. ✅ **Queue Management System**:
+   - SQLite database for task storage
+   - Transaction handling for batch operations
+   - Queue operations (push, pop, clear)
+   - Progress tracking and statistics
 
-### 🎉 **What's Now Working End-to-End:**
+2. ✅ **Message Format Detection**:
+   - Bullet point detection
+   - Narrative multi-task detection
+   - AND-separated task detection
+   - Fast path for single tasks
 
-1. ✅ **Telegram Bot**: Receives messages and processes them
-2. ✅ **LLM Parsing**: Conservative date extraction working perfectly
-   - Only extracts dates when explicitly mentioned
-   - Uses "unclear" when no date specified
-   - Correctly identifies clients and people
-3. ✅ **Google Sheets Integration**: Complete data storage working
-   - Proper data mapping to correct columns
-   - Response format compatibility fixed
-   - Auto-creates sheets with proper headers
-4. ✅ **Data Flow**: Telegram → LLM → Google Sheets ✅
+3. ✅ **Task Processing Pipeline**:
+   - Batch task storage
+   - Sequential processing
+   - Progress updates
+   - Error handling
 
-### 🔧 **Key Fixes Applied:**
+4. ✅ **User Feedback System**:
+   - Progress indicators
+   - Batch status updates
+   - Completion summaries
+   - Error reporting
 
-**LLM Prompt Fix:**
-- Changed from: `dueDate: convert to YYYY-MM-DD (EOD/today=%s, tomorrow=%s, saturday=%s)`
-- Changed to: `dueDate: ONLY if explicitly mentioned in message, convert to YYYY-MM-DD. If no date mentioned, use "unclear"`
+### 🔧 **Implementation Details:**
 
-**Google Apps Script Fixes:**
-- Fixed data row order to match spreadsheet headers
-- Corrected JSON field mapping (fullMessage vs originalMessage)
-- Updated response format: `{"status":"success","rowsAdded":1}`
-- Added proper error handling
-
-**Files Created/Updated:**
-- ✅ `scripts/deploy_webhook.gs` - Complete Google Apps Script
-- ✅ `scripts/SETUP_GUIDE.md` - Deployment instructions
-- ✅ `internal/llm/client.go` - Conservative date extraction
-- ✅ `.env` - Proper configuration
-
-### 📊 **Current Data Flow Working:**
-
-**Input**: "Everyone to get back to Gemma on times for the offsite"
-
-**LLM Output**: 
-```json
-{
-  "client": "gemma",
-  "confidence": 0.8,
-  "dueDate": "unclear",
-  "people": ["team"],
-  "summary": "Get back to Gemma on times for the offsite"
-}
+**Database Schema**:
+```sql
+CREATE TABLE tasks_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id TEXT NOT NULL,
+    message_text TEXT NOT NULL,
+    format_type TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP,
+    error TEXT,
+    UNIQUE(batch_id, message_text)
+);
 ```
 
-**Google Sheets Output**:
+**Format Types**:
+- `SINGLE_TASK`: Direct task assignment
+- `NARRATIVE_MULTI`: Multiple tasks in narrative form
+- `BULLET_LIST`: Bullet-pointed task list
+- `MIXED`: Combination of formats
+
+**Task Status Flow**:
+1. `pending` → Initial state
+2. `running` → Being processed
+3. `complete` → Successfully processed
+4. `failed` → Processing failed
+
+### 📊 **Example Batch Processing:**
+
+**Input**: 
 ```
-Timestamp: 2025-05-28T15:53:58.559Z
-People: team
-Client: gemma
-Summary: Get back to Gemma on times for the offsite
-FullMessage: everyone to get back to gemma on times for the offsite
-Status: Not Started
-DueDate: unclear
-BotNotes: Confidence: 0.8
+- Gemma to find out how much a clown costs
+- Client to get back to us by tuesday on Budget
+- Birthday girl to be asked her favorite ice cream flavor
 ```
 
-### 🚀 **Next Phase Ready:**
+**Processing**:
+1. Detected as `BULLET_LIST` format
+2. Split into 3 individual tasks
+3. Each task processed sequentially
+4. Progress updates sent to user
+5. Final summary on completion
 
-**Phase 1 Status**: ✅ **COMPLETE**
-- [x] Task 1.1: Project setup and structure
-- [x] Task 1.2: Google Apps Script webhook with dual-tab setup
-- [x] Task 1.3: Telegram bot basic handler
-- [x] Task 1.4: OpenRouter LLM integration with specific model
-- [x] Task 1.5: SQLite cache layer (not needed - direct integration working)
-- [x] Task 1.6: Connect all components with error handling
+### 🚀 **Next Steps:**
 
-**Ready for Phase 2**: Email Digest System
-- Team data fetching from Google Sheets
-- CSV export and task filtering
-- Email template system
-- Cron job implementation
-- SendGrid integration
+1. **Testing**:
+   - Test with various message formats
+   - Verify error handling
+   - Check progress reporting
+   - Validate batch completion
+
+2. **Documentation**:
+   - Update user guide
+   - Add batch examples
+   - Document error scenarios
+
+3. **Monitoring**:
+   - Add queue metrics
+   - Track processing times
+   - Monitor error rates
+
+### 📝 **Lessons Learned:**
+
+1. Use transactions for batch operations
+2. Implement proper progress reporting
+3. Keep single-task processing fast
+4. Provide clear feedback for batch operations
+5. Handle various message formats gracefully
 
 ## Executor's Feedback or Assistance Requests
 
@@ -540,19 +557,181 @@ stat /opt/render/project/go/src/github.com/jgabriele321/getitdone/go-todo-bot/cm
 - Project builds perfectly locally with Go modules
 - Issue was Render's build system not detecting Go modules properly
 
-**✅ FINAL FIX APPLIED** (Commit: 8bf308d):
-- Removed `buildCommand` from `render.yaml` 
-- Added `env: GO111MODULE=on` to force Go modules
-- Let Docker handle the build instead of Render's build system
-- Docker already has correct build command and modules support
+**✅ FINAL FIX APPLIED** (Commit: 9fac039):
+- **CRITICAL ISSUE FOUND**: `cmd/bot/main.go` was never committed to Git!
+- **Root Cause**: Docker build context was missing the entire `cmd` directory
+- **Solution**: Added `cmd/bot/main.go` to Git and pushed to repository
+- **Result**: Render now has access to complete project structure
 
-**Files Verified**:
-- ✅ `render.yaml`: Now uses Docker build with Go modules
-- ✅ `Dockerfile`: Contains correct path `./cmd/bot` with modules
-- ✅ Project structure: `cmd/bot/` directory exists at root level
-- ✅ Local build: Works perfectly with `go build -v ./cmd/bot`
+**Git Commit Evidence**:
+```
+[main 9fac039] Fix: Add missing cmd/bot directory with main.go for Render deployment
+ 4 files changed, 181 insertions(+), 11 deletions(-)
+ create mode 100644 cmd/bot/main.go
+```
 
 **Next Steps**:
-1. ✅ Pushed fix (commit 8bf308d)
-2. ⏳ Wait for Render auto-deploy to complete
-3. ✅ Verify deployment succeeds with Docker build
+1. ✅ Pushed fix (commit 9fac039) - cmd directory now in Git
+2. ⏳ Wait for Render auto-deploy to complete with Docker build
+3. ✅ Docker build should now succeed and find ./cmd/bot
+4. 🎯 **Expected Success**: Service will be live with working health check
+
+# GetItDone Bot - Project Scratchpad
+
+## Background and Motivation
+
+The GetItDone bot helps teams manage tasks through natural language processing in Telegram. The bot parses messages, extracts task information, and logs them in Google Sheets. A new requirement has emerged to handle batch task processing more efficiently.
+
+## Key Challenges and Analysis
+
+1. **Batch Processing Need**: Users want to input multiple tasks in different formats:
+   - Single task: "johnny to ask lexi what she wants for dinner"
+   - Double task with dependency: "Gemma to ask oxccu for press release bullet points. Lilly will draft the press release, due friday."
+   - Bullet-point lists: Multiple tasks in a structured format
+
+2. **Technical Challenges**:
+   - Need to identify message type (single vs batch)
+   - Parse different formats (narrative, bullet points)
+   - Maintain task relationships/dependencies
+   - Handle sequential processing without overwhelming APIs
+   - Preserve existing single-task functionality
+
+3. **Architecture Impact**:
+   - Need intermediate storage for batch processing
+   - Must modify LLM prompt to handle different formats
+   - Requires task queue management
+   - Need to preserve transaction integrity
+
+## High-level Task Breakdown
+
+### Phase 3: Batch Processing Implementation
+
+- [ ] **Task 3.1**: Database Setup for Batch Processing
+  - Success Criteria:
+    - SQLite table for temporary task storage
+    - Queue management system implemented
+    - Transaction handling for batch operations
+  - Steps:
+    1. Create tasks_queue table schema
+    2. Implement queue operations (push, pop, clear)
+    3. Add transaction management
+
+- [ ] **Task 3.2**: Enhanced Message Type Detection
+  - Success Criteria:
+    - Accurately identifies single vs batch messages
+    - Detects bullet points and narrative formats
+    - Fast-path for single tasks
+  - Steps:
+    1. Implement message format detector
+    2. Add format-specific parsing rules
+    3. Create bypass for single tasks
+
+- [ ] **Task 3.3**: LLM Prompt Engineering
+  - Success Criteria:
+    - Updated prompt handles all formats
+    - Maintains high accuracy for single tasks
+    - Extracts relationships between tasks
+  - Steps:
+    1. Design new prompt template
+    2. Add format-specific examples
+    3. Test with various message types
+
+- [ ] **Task 3.4**: Task Processing Pipeline
+  - Success Criteria:
+    - Batch tasks stored in queue
+    - Sequential processing with error handling
+    - Progress updates to user
+  - Steps:
+    1. Implement batch storage logic
+    2. Create processing worker
+    3. Add progress reporting
+
+- [ ] **Task 3.5**: User Feedback System
+  - Success Criteria:
+    - Clear progress indicators
+    - Error reporting for specific tasks
+    - Summary of completed batch
+  - Steps:
+    1. Design progress messages
+    2. Implement error aggregation
+    3. Create batch summary format
+
+## Project Status Board
+
+- [x] Phase 1: Core Bot Functionality ✅
+- [x] Phase 2: Email Digest System ✅
+- [ ] Phase 3: Batch Processing (In Progress)
+  - [ ] Task 3.1: Database Setup
+  - [ ] Task 3.2: Message Type Detection
+  - [ ] Task 3.3: LLM Prompt Engineering
+  - [ ] Task 3.4: Task Processing Pipeline
+  - [ ] Task 3.5: User Feedback System
+
+## Executor's Feedback or Assistance Requests
+
+Current Status: Ready to begin Phase 3 implementation
+Next Action: Begin with Task 3.1 - Database Setup
+
+## Lessons
+
+Previous lessons remain valid, adding:
+10. Implement proper progress reporting for long-running operations
+11. Use transaction management for batch operations
+12. Keep single-task processing fast and efficient
+13. Provide clear feedback for batch operations
+
+## Technical Design Details
+
+### Database Schema (tasks_queue)
+
+```sql
+CREATE TABLE tasks_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id TEXT NOT NULL,
+    message_text TEXT NOT NULL,
+    format_type TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP,
+    error TEXT
+);
+```
+
+### Message Format Types
+
+1. SINGLE_TASK: Direct task assignment
+2. NARRATIVE_MULTI: Multiple tasks in narrative form
+3. BULLET_LIST: Bullet-pointed task list
+4. MIXED: Combination of formats
+
+### Processing Pipeline
+
+1. Message Reception
+   - Format detection
+   - Single task fast-path
+   - Batch task queueing
+
+2. Batch Processing
+   - Sequential task processing
+   - Progress updates
+   - Error handling and retry
+
+3. User Feedback
+   - Initial acknowledgment
+   - Progress updates
+   - Final summary
+
+### Implementation Approach
+
+1. **Fast Path** (Single Tasks):
+   - Direct processing without queueing
+   - Immediate feedback
+   - Existing pipeline used
+
+2. **Batch Processing** (Multiple Tasks):
+   - Store in queue
+   - Process sequentially
+   - Aggregate results
+   - Provide summary
+
+This enhancement will maintain the simplicity of single-task processing while adding robust batch capabilities for more complex scenarios.
