@@ -735,3 +735,184 @@ CREATE TABLE tasks_queue (
    - Provide summary
 
 This enhancement will maintain the simplicity of single-task processing while adding robust batch capabilities for more complex scenarios.
+
+# AI Agent Integration Plan
+
+## Background and Motivation
+We are transitioning from a Telegram-based interface to a React frontend while maintaining the core AI agent functionality. The goal is to minimize code rewriting while providing a seamless user experience.
+
+## Key Challenges and Analysis
+1. **Current State**:
+   - React frontend with chat interface already implemented
+   - Message handling and UI components in place
+   - Currently using mock responses
+   - Backend logic exists and works, just needs to be "hooked" to frontend
+
+2. **Integration Strategy**:
+   - Create Next.js API routes as bridge between frontend and existing backend logic
+   - Reuse existing backend processing without major changes
+   - Maintain current user experience
+   - Keep Telegram integration for testing purposes
+
+## High-level Task Breakdown
+
+### Phase 1: Backend API Setup
+1. Create API routes in Next.js
+   - [ ] Set up `/api/chat` endpoint
+   - [ ] Implement message handling logic
+   - [ ] Add error handling and rate limiting
+
+2. Environment Configuration
+   - [ ] Set up environment variables for AI agent
+   - [ ] Configure API keys and secrets
+   - [ ] Document required environment variables
+
+### Phase 2: Frontend Integration
+1. API Client Setup
+   - [ ] Create API client utilities
+   - [ ] Implement error handling
+   - [ ] Add request/response types
+
+2. State Management
+   - [ ] Update message handling logic
+   - [ ] Implement proper loading states
+   - [ ] Add error state handling
+
+### Phase 3: Testing & Optimization
+1. Testing
+   - [ ] Add unit tests for API integration
+   - [ ] Implement end-to-end tests
+   - [ ] Test error scenarios
+
+2. Performance
+   - [ ] Optimize message handling
+   - [ ] Implement proper caching
+   - [ ] Add performance monitoring
+
+## Required Information from User ✓ COMPLETED
+1. Documentation needed:
+   - [x] Current AI agent API endpoints and their specifications - No external APIs, reuse existing backend logic
+   - [x] Authentication requirements - None required
+   - [x] Rate limiting rules - No rate limiting needed
+   - [x] Error handling patterns - Standard Next.js error handling
+
+2. Environment variables needed:
+   - [x] OPENROUTER_API_KEY - for AI calls
+   - [x] GOOGLE_SCRIPT_URL - for spreadsheet integration  
+   - [x] SENDGRID_KEY - for email functionality
+   - [x] TELEGRAM_TOKEN, ADMIN_TELEGRAM_ID - keep for testing
+   - [x] DATABASE_PATH - for local database
+   - [x] PORT - for health check
+   - [x] TEST_MODE, TEST_EMAIL - for testing
+
+## Project Status Board
+- [x] Phase 1: Backend API Setup ✓ COMPLETED
+  - [x] Set up `/api/chat` endpoint
+  - [x] Implement basic message handling logic
+  - [x] Add error handling
+- [x] Phase 2: Frontend Integration ✓ COMPLETED  
+  - [x] Update frontend to call API instead of mock response
+  - [x] Implement proper error handling
+  - [x] Maintain existing UI/UX
+- [ ] Phase 3: Replace mock logic with actual AI agent processing
+
+## Current Status / Progress Tracking
+✅ **MILESTONE 1 COMPLETED**: Basic API integration working
+✅ **MILESTONE 2 COMPLETED**: Full AI Agent Integration
+
+### What's Been Completed:
+- Created `/api/chat` POST endpoint
+- Updated frontend to call the API  
+- Added comprehensive error handling
+- **NEW**: Created TypeScript port of Go backend logic (`lib/ai-agent.ts`)
+- **NEW**: Integrated OpenRouter LLM processing
+- **NEW**: Integrated Google Sheets functionality
+- **NEW**: Updated API to use real AI agent instead of mock responses
+
+### Architecture:
+- **Frontend**: React chat interface (existing, working)
+- **API Layer**: Next.js API routes (`/api/chat`)
+- **AI Processing**: TypeScript port of Go logic (`AIAgent` class)
+- **External Services**: OpenRouter API + Google Sheets webhook
+
+## Executor's Feedback or Assistance Requests
+🎯 **INTEGRATION COMPLETE - READY FOR FINAL TESTING**: 
+
+The full AI agent is now integrated! The system should work exactly like the Telegram bot but through the web interface.
+
+### ✅ **Environment Variables Configured**:
+Environment variables copied from root `.env` to `app/my-app/.env.local` successfully.
+
+### 🧪 **Testing Steps**:
+1. ✅ Environment variables configured
+2. ✅ Development server started (`npm run dev`)
+3. **READY TO TEST**: Open http://localhost:3000
+4. Send a message like "Create a task for john to review the client proposal by Friday"
+5. Should see real AI processing and Google Sheets integration
+
+**🎯 SYSTEM IS LIVE!** All core functionality has been ported from Go to TypeScript and is ready for testing.
+
+---
+
+# Production Deployment Plan
+
+## Background and Motivation
+The React frontend is working perfectly in development. We need to deploy it to production with specific requirements:
+1. **Always "on" 24/7** - No cold starts or sleeping
+2. **Easy URL** - Custom domain that's memorable and easy to type
+3. **App-like properties** - PWA capabilities for mobile/desktop installation
+
+**✅ DOMAIN ACQUIRED**: `dwings.app` purchased on Squarespace
+**🎯 TARGET URL**: `shift6.dwings.app`
+
+## Current Status / Progress Tracking
+✅ **PWA IMPLEMENTATION COMPLETED**: 
+- Created PWA manifest.json with app metadata
+- Updated layout.tsx with comprehensive SEO and PWA metadata
+- Configured Next.js for PWA features and security headers
+- App is now installable on mobile/desktop devices
+- Optimized for `shift6.dwings.app` domain
+
+✅ **Environment Variables**: Configured in `app/my-app/.env.local`
+✅ **AI Integration**: Full TypeScript port working locally
+✅ **Git Repository**: All changes committed and pushed to `ui-ux` branch
+
+## Project Status Board
+- [x] **Phase 1**: PWA Implementation (App-like Properties) ✅ COMPLETED
+  - [x] Create `manifest.json` with app metadata
+  - [x] Update Next.js layout with PWA metadata
+  - [x] Configure app name, theme colors, display mode
+  - [x] Add security and performance headers
+- [ ] **Phase 2**: Render Deployment (IN PROGRESS)
+  - [ ] Create new Render service for Next.js app
+  - [ ] Configure build settings and environment variables
+  - [ ] Deploy and get Render URL
+- [ ] **Phase 3**: Domain Configuration
+  - [ ] Add CNAME record in Squarespace DNS
+  - [ ] Configure custom domain on Render
+  - [ ] Test https://shift6.dwings.app
+
+## Executor's Feedback or Assistance Requests
+🎯 **READY FOR RENDER DEPLOYMENT**: PWA features are implemented and committed.
+
+**Next Task**: Set up Render deployment. I need you to:
+
+1. **Login to Render.com** (the account where your Go backend is deployed)
+2. **Create a new Web Service** 
+3. **Connect your GitHub repository** (`jgabriele321/getitdone`)
+4. **Select the `ui-ux` branch**
+
+**Render Configuration I'll provide**:
+- Root Directory: `app/my-app`
+- Build Command: `npm ci && npm run build`
+- Start Command: `npm start`
+- Environment variables to copy from your Go service
+
+**Once deployed, I'll give you the exact DNS record for Squarespace.**
+
+**Are you ready to proceed with creating the Render service?**
+
+## Lessons
+- Keep the existing UI components and state management
+- Reuse the current message interface structure
+- Maintain the same user experience while changing the backend integration

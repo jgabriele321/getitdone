@@ -31,21 +31,54 @@ export default function ChatPage() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const messageContent = inputValue.trim()
     setInputValue("")
     setIsLoading(true)
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botMessage: Message = {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageContent,
+          userId: 'web-user' // Optional: can be used for user tracking
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: data.response,
+          sender: "bot",
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, botMessage])
+      } else {
+        // Handle API error
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: data.error || "Sorry, I encountered an error processing your request. Please try again.",
+          sender: "bot",
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error('Error calling chat API:', error)
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content:
-          "I've received your to-do items and I'm processing them. I'll help you organize and prioritize these tasks for maximum productivity.",
+        content: "Sorry, I'm having trouble connecting right now. Please try again.",
         sender: "bot",
         timestamp: new Date(),
       }
-      setMessages((prev) => [...prev, botMessage])
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
