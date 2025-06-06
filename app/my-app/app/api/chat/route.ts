@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AIAgent } from '@/lib/ai-agent'
+import { AIAgent } from '../../../lib/ai-agent'
 
 interface ChatMessage {
   id: string

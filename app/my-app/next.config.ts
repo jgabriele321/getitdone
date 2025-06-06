@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   // Enable static file serving for PWA
@@ -11,6 +12,15 @@ const nextConfig: NextConfig = {
   // PWA and performance optimizations
   experimental: {
     optimizeCss: true,
+  },
+
+  // Webpack configuration for path aliases
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname),
+    };
+    return config;
   },
   
   // Headers for PWA and security
