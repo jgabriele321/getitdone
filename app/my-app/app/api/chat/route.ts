@@ -1,22 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AIAgent } from '../../../lib/ai-agent'
 
-interface ChatMessage {
-  id: string
-  content: string
-  sender: 'user' | 'bot'
-  timestamp: Date
-}
-
 interface ChatRequest {
   message: string
   userId?: string
-}
-
-interface ChatResponse {
-  response: string
-  success: boolean
-  error?: string
 }
 
 export async function POST(request: NextRequest) {

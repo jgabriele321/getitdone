@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import Image from "next/image"
 import { useState } from "react"
 import { Button } from "../components/ui/button"
 import { Textarea } from "../components/ui/textarea"
@@ -93,7 +93,7 @@ export default function ChatPage() {
       {/* Header */}
       <header className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
         <div className="flex items-center gap-4">
-          <img src="/logo-black.svg" alt="Shift6 Studios" className="h-8 md:h-10" />
+          <Image src="/logo-black.svg" alt="Shift6 Studios" width={40} height={40} className="h-8 md:h-10" />
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">Productivity Hub</h1>
         </div>
 
