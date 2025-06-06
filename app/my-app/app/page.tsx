@@ -91,10 +91,10 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-white text-black">
       {/* Header */}
-      <header className="flex items-center justify-between p-3 md:p-4 border-b border-gray-100">
+      <header className="flex items-center justify-between p-3 md:p-5 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <Image src="/logo-black.svg" alt="Shift6 Studios" width={32} height={32} className="h-6 md:h-8" />
-          <h1 className="text-lg md:text-xl font-bold tracking-tight">Productivity Hub</h1>
+          <Image src="/logo-black.svg" alt="Shift6 Studios" width={36} height={36} className="h-7 md:h-9" />
+          <h1 className="text-lg md:text-2xl font-bold tracking-tight">Productivity Hub</h1>
         </div>
 
         <Sheet>
@@ -118,58 +118,60 @@ export default function ChatPage() {
         </Sheet>
       </header>
 
-      <main className="container mx-auto px-4 py-4 md:py-6 max-w-4xl">
+      <main className="container mx-auto px-4 py-6 md:py-9 max-w-4xl">
         {/* Chat Section */}
-        <div className="space-y-4 md:space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight">Task Manager</h2>
+        <div className="space-y-6 md:space-y-7">
+          <div className="text-center space-y-3">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">Task Manager</h2>
             <a
               href="https://docs.google.com/spreadsheets/d/1xq52BtoOmUIFiZ3BR_v5_Bay7jQSi5qZsT9a0pLvKBA/edit?gid=94316419#gid=94316419"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-base md:text-lg text-black hover:text-gray-600 underline transition-colors"
+              className="text-lg md:text-xl text-black hover:text-gray-600 underline transition-colors"
             >
               Spreadsheet Here
             </a>
           </div>
 
           {/* Chat Messages */}
-          <div className="bg-gray-50 rounded-lg p-4 min-h-[240px] md:min-h-[320px] space-y-3 overflow-y-auto">
-            {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <p className="text-center">Start by adding your to-do items below.</p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      message.sender === "user" ? "bg-black text-white" : "bg-white border border-gray-200"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    <span className="text-xs opacity-70 mt-2 block">{message.timestamp.toLocaleTimeString()}</span>
+          <div className="bg-gray-50 rounded-lg p-5 h-[270px] md:h-[360px] overflow-y-auto">
+            <div className="space-y-3">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  <p className="text-center">Start by adding your to-do items below.</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[80%] p-3 rounded-lg ${
+                        message.sender === "user" ? "bg-black text-white" : "bg-white border border-gray-200"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <span className="text-xs opacity-70 mt-2 block">{message.timestamp.toLocaleTimeString()}</span>
+                    </div>
+                  </div>
+                ))
+                            )}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
-              ))
-            )}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-gray-200 p-4 rounded-lg">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Input Section */}
@@ -179,14 +181,14 @@ export default function ChatPage() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Add to do list items here, one at a time or separated by bullet points or dashes"
-              className="min-h-[100px] text-base resize-none border-2 border-gray-200 focus:border-black transition-colors"
+              className="min-h-[110px] text-base resize-none border-2 border-gray-200 focus:border-black transition-colors"
               disabled={isLoading}
             />
             <div className="flex justify-end">
               <Button
                 onClick={handleSubmit}
                 disabled={!inputValue.trim() || isLoading}
-                className="bg-black hover:bg-gray-800 text-white px-6 py-2 text-base font-medium"
+                className="bg-black hover:bg-gray-800 text-white px-7 py-2 text-base font-medium"
               >
                 <Send className="w-4 h-4 mr-2" />
                 Submit
