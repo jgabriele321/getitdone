@@ -124,7 +124,7 @@ export default function ChatPage() {
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">Task Manager</h2>
             <a
-              href="https://docs.google.com/spreadsheets/d/1xq52BtoOmUIFiZ3BR_v5_Bay7jQSi5qZsT9a0pLvKBA/edit?gid=94316419#gid=94316419"
+              href="https://docs.google.com/spreadsheets/d/1XBPrffKlIEI_htPNWbBNo2dk-crt62323luClLYFyDQ/edit?gid=0#gid=0"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xl md:text-2xl text-black hover:text-gray-600 underline transition-colors"
