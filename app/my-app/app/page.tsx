@@ -105,13 +105,27 @@ export default function ChatPage() {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-64 bg-white">
-            <nav className="mt-8">
+            <nav className="mt-8 space-y-2">
               <Button
                 variant="ghost"
                 className="w-full justify-start text-lg font-medium hover:bg-gray-100"
-                onClick={() => window.location.reload()}
+                onClick={() => window.open('https://schedule-c-calculator.onrender.com', '_blank')}
               >
-                Home
+                SchedC Calc
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-lg font-medium hover:bg-gray-100"
+                onClick={() => window.open('https://t.me/Ya8hoda_Bot', '_blank')}
+              >
+                Ya8hoda
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-lg font-medium hover:bg-gray-100"
+                onClick={() => window.open('https://testwelcomewallet.vercel.app/', '_blank')}
+              >
+                WelcomeWallet
               </Button>
             </nav>
           </SheetContent>
